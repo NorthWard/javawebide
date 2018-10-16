@@ -55,28 +55,30 @@
     // editor.setSize('800px', '950px');     //设置代码框的长宽
 
     editor.setValue("");    //先代码框的值清空
-    // editor.setValue(obj.scriptCode);    //给代码框赋值
-
     // editor.setOption("readOnly", true);
 
     editor.on("change", function(instance,changeObj){
+        if(changeObj.origin != "+input" || changeObj.text == " "){
+            return;
+        }
         $.ajax({
             type: 'GET',
-             url: '/api/getHints?word=' + changeObj,
+             url: '/api/getHints?word=' + changeObj.text,
             success: function(resp) {
+                console.log(instance, changeObj);
                 var options = {
                     hint: function() {
                         return {
                             from: editor.getDoc().getCursor(),
                             to: editor.getDoc().getCursor(),
-                            list: resp
+                            list:  $.parseJSON(resp),
                         }
                     }
                 };
                 editor.showHint(options);
             },
             error: function(error) {
-                editor.openNotification(error, options)
+                editor.openNotification(error, null);
             }
         });
 
