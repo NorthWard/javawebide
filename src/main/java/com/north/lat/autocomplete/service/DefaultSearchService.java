@@ -5,7 +5,5 @@ import com.north.lat.autocomplete.model.AutoCompleteTipItem;
 
 import java.util.List;
 
-public interface AutoCompleteService {
-
-    List<AutoCompleteTipItem> nextTips(AutoCompleteCondition autoCompleteCondition);
+public abstract class DefaultSearchService implements SearchService<AutoCompleteCondition, AutoCompleteTipItem> {
 }

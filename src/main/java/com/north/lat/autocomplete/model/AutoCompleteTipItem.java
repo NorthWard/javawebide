@@ -1,6 +1,9 @@
 package com.north.lat.autocomplete.model;
 
 
+/**
+ * @author laihaohua
+ */
 public class AutoCompleteTipItem {
     private final String value;
     private final String displayText;

@@ -6,8 +6,11 @@ import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * @author laihaohua
+ */
 public class AutoCompleteClassLoader  extends URLClassLoader {
-    private static AutoCompleteClassLoader INSTANCE = null;
+    private static volatile AutoCompleteClassLoader INSTANCE = null;
     private static List<URL>  list = new ArrayList<>(50);
     private AutoCompleteClassLoader(URL[] urls) {
         super(urls);
