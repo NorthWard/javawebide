@@ -6,11 +6,12 @@ import org.apache.http.Header;
 import org.apache.http.HeaderElement;
 import org.apache.http.HttpHost;
 import org.apache.http.ParseException;
-import org.elasticsearch.action.ActionWriteResponse;
+import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.support.replication.ReplicationResponse;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -34,7 +35,7 @@ import java.util.Map;
 public class EsManager {
     private static volatile EsManager INSTANCE = null;
     private RestHighLevelClient esClient;
-    private static final String INDEX_NAME = "NORTH_CLASS_CACHE_ES";
+    private static final String INDEX_NAME = "north_class_cache_es";
     private EsManager(){
         RestClientBuilder builder = RestClient.builder(new HttpHost("localhost", 9200, "http"));
         builder.setFailureListener(new RestClient.FailureListener() {
@@ -65,17 +66,43 @@ public class EsManager {
         request.source(sourceJson, XContentType.JSON);
         try {
             IndexResponse indexResponse = getInstance().esClient.index(request, blankHeader());
-            ActionWriteResponse.ShardInfo shardInfo = indexResponse.getShardInfo();
+            ReplicationResponse.ShardInfo shardInfo = indexResponse.getShardInfo();
             if (shardInfo.getTotal() != shardInfo.getSuccessful()) {
                 System.out.println("shardInfo.getTotal() != shardInfo.getSuccessful(): sourceJson = " + sourceJson);
             }
             if (shardInfo.getFailed() > 0) {
-                for (ActionWriteResponse.ShardInfo.Failure failure : shardInfo.getFailures()) {
+                for (ReplicationResponse.ShardInfo.Failure failure : shardInfo.getFailures()) {
                     System.out.println("failure:" + JSON.toJSONString(failure)+" ,sourceJson = " + sourceJson);
                 }
             }
+            handleResponse(indexResponse);
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+    public static <T extends Serializable> void put(String type, String id, T source){
+        if(StringUtils.isBlank(type) || source == null || StringUtils.isBlank(id)){
+            return;
+        }
+        String sourceJson = JSON.toJSONString(source);
+        IndexRequest request = new IndexRequest(INDEX_NAME,type, id);
+        request.source(sourceJson, XContentType.JSON);
+        try {
+            IndexResponse indexResponse = getInstance().esClient.index(request, blankHeader());
+            handleResponse(indexResponse);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    private static void handleResponse(IndexResponse indexResponse){
+        ReplicationResponse.ShardInfo shardInfo = indexResponse.getShardInfo();
+        if (shardInfo.getTotal() != shardInfo.getSuccessful()) {
+            System.out.println("shardInfo.getTotal() != shardInfo.getSuccessful(): ");
+        }
+        if (shardInfo.getFailed() > 0) {
+            for (ReplicationResponse.ShardInfo.Failure failure : shardInfo.getFailures()) {
+                System.out.println("failure:" + JSON.toJSONString(failure));
+            }
         }
     }
         public static List<Map<String, Object>> search(String type, String keyword, String ... fields){
@@ -104,16 +131,27 @@ public class EsManager {
         }
         return null;
     }
+
+    public static boolean exists(String type, String id){
+        GetRequest getRequest = new GetRequest(INDEX_NAME);
+        getRequest.type(type).id(id);
+        try {
+           return getInstance().esClient.exists(getRequest);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
     private static Header blankHeader(){
         return  new Header() {
             @Override
             public String getName() {
-                return null;
+                return "no";
             }
 
             @Override
             public String getValue() {
-                return null;
+                return "no";
             }
 
             @Override

@@ -19,10 +19,10 @@ public class AutoCompleteCondition {
         return word;
     }
 
-    private static class AutoCompleteConditionBuilder{
+    public static class AutoCompleteConditionBuilder{
         private final TipsType tipsType;
         private String word;
-        AutoCompleteConditionBuilder(TipsType tipsType){
+        public AutoCompleteConditionBuilder(TipsType tipsType){
                  this.tipsType = tipsType;
         }
         public void setWord(String word){
